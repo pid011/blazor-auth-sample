@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="src/BlazorAuthSample.AppHost/BlazorAuthSample.AppHost.csproj" />
+  <Project Path="src/BlazorAuthSample.ServiceDefaults/BlazorAuthSample.ServiceDefaults.csproj" />
+  <Project Path="src/BlazorAuthSample/BlazorAuthSample.csproj" />
+</Solution>

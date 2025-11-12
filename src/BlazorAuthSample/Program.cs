@@ -38,6 +38,9 @@ builder.Services.AddIdentityCore<ApplicationUser>(options =>
 
 builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
 
+builder.Services.AddRequestTimeouts();
+builder.Services.AddOutputCache();
+
 var app = builder.Build();
 
 app.MapDefaultEndpoints();
@@ -64,5 +67,8 @@ app.MapRazorComponents<App>()
 
 // Add additional endpoints required by the Identity /Account Razor components.
 app.MapAdditionalIdentityEndpoints();
+
+app.UseRequestTimeouts();
+app.UseOutputCache();
 
 app.Run();

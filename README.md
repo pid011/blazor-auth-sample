@@ -46,7 +46,7 @@ kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/cont
 ### 1. 환경 변수와 Secret 설정
 
 - `infra/k8s/configmap.yaml`에서 `aspnetcore-environment` 값을 원하는 환경으로 설정합니다.
-- 데이터베이스는 PostgreSQL을 사용하며 연결 문자열은 Secret으로 관리합니다. 로컬 PostgreSQL, 클라우드 매니지드 서비스(Aiven, Supabase 등) 모두 사용 가능합니다. 외부 서비스를 사용할 경우 SSL 옵션과 포트 정보를 확인해 연결 문자열에 반영하세요.
+- 데이터베이스는 PostgreSQL을 사용하며 연결 문자열은 Secret으로 관리합니다. 로컬 PostgreSQL, 클라우드 매니지드 서비스(Aiven, Supabase 등) 모두 사용 가능합니다.
 
 ```powershell
 # PowerShell

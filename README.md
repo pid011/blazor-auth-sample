@@ -1,27 +1,219 @@
 # blazor-auth-sample
 
-Blazor 기본 샘플을 활용하여 쿠버네티스 배포를 해보는 프로젝트입니다.
+Blazor Server 샘플 애플리케이션을 .NET Aspire 기반으로 구성하고, Kubernetes에 배포하는 과정을 실습하는 프로젝트입니다.
 
 ## 기술 스택
 
-이 프로젝트는 **.NET Aspire**를 기반으로 하며, 다음 기술들을 사용합니다:
+- **ASP.NET Core** (.NET 10.0)
+- **Blazor Server** + **ASP.NET Core Identity**
+- **Entity Framework Core** (Npgsql Provider)
+- **PostgreSQL** (Aspire.Hosting.PostgreSQL)
+- **.NET Aspire** (AppHost, ServiceDefaults)
+- **Kubernetes** + **Nginx Ingress Controller**
 
-- **ASP.NET Core** (.NET 10.0): 웹 애플리케이션 프레임워크
-- **Blazor**: 인터랙티브 웹 UI 구현
-- **PostgreSQL**: 주 데이터베이스 (Aspire.Hosting.PostgreSQL)
-- **Entity Framework Core**: ORM 및 데이터베이스 마이그레이션 (Npgsql EF Core Provider)
-- **ASP.NET Core Identity**: 사용자 인증 및 권한 관리
-- **.NET Aspire**: 클라우드 네이티브 앱 오케스트레이션 및 서비스 디스커버리
+## 솔루션 구성
 
-### 주요 프로젝트 구성
+- **BlazorAuthSample**: Blazor Server 앱과 Identity UI가 포함된 웹 애플리케이션
+- **BlazorAuthSample.AppHost**: Aspire AppHost. 개발 환경에서 PostgreSQL 컨테이너와 앱 오케스트레이션을 담당
+- **BlazorAuthSample.ServiceDefaults**: 공통 서비스 확장 및 기본 구성
+- **infra/k8s**: 프로덕션 환경 배포를 위한 Kubernetes 매니페스트 모음
 
-- **BlazorAuthSample.AppHost**: Aspire AppHost - 애플리케이션 오케스트레이션 및 PostgreSQL 컨테이너 관리
-- **BlazorAuthSample**: Blazor Server 앱 - 메인 웹 애플리케이션 (Identity 인증 포함)
-- **BlazorAuthSample.ServiceDefaults**: Aspire 서비스 기본 설정 및 공통 확장 메서드
+## 폴더 구조
 
-## 프로젝트 구조
+- `src/` — 애플리케이션 코드 (Blazor 앱, AppHost, ServiceDefaults)
+- `infra/` — Kubernetes 매니페스트와 인프라 관련 자료
 
-간단한 폴더 구조는 아래와 같습니다:
+## Kubernetes 배포 가이드
 
-- `infra/`: 쿠버네티스 매니페스트, Helm 차트 또는 인프라 관련 메타데이터를 보관합니다. 클러스터 배포 및 환경별 설정이 이 디렉터리에 위치합니다.
-- `src/`: 실제 서버/애플리케이션 소스 코드가 들어있습니다. Blazor 앱, 호스트, 서비스 설정 등이 포함됩니다.
+### 사전 준비
+
+1. Kubernetes 클러스터 v1.19 이상
+2. `kubectl` CLI
+3. Nginx Ingress Controller (아래 명령 참고)
+
+```powershell
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.9.5/deploy/static/provider/cloud/deploy.yaml
+```
+
+```bash
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.9.5/deploy/static/provider/cloud/deploy.yaml
+```
+
+### 1. 환경 변수와 Secret 설정
+
+- `infra/k8s/configmap.yaml`에서 `aspnetcore-environment` 값을 원하는 환경으로 설정합니다.
+- 데이터베이스 연결 문자열은 Secret으로 관리합니다.
+
+```powershell
+$connectionString = "Host=<DB URL>;Port=5432;Username=postgres;Password=<패스워드>;Database=postgres;"
+kubectl delete secret blazor-auth-sample-secret -n default --ignore-not-found
+kubectl create secret generic blazor-auth-sample-secret `
+    --from-literal=connection-string=$connectionString
+```
+
+```bash
+connectionString="Host=<DB URL>;Port=5432;Username=postgres;Password=<패스워드>;Database=postgres;"
+kubectl delete secret blazor-auth-sample-secret -n default --ignore-not-found
+kubectl create secret generic blazor-auth-sample-secret \
+  --from-literal="connection-string=${connectionString}"
+```
+
+Secret 값을 확인하려면 다음을 사용하세요.
+
+```powershell
+kubectl get secret blazor-auth-sample-secret -o jsonpath='{.data.connection-string}' | ForEach-Object {
+    [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($_))
+}
+```
+
+```bash
+kubectl get secret blazor-auth-sample-secret -o jsonpath='{.data.connection-string}' | base64 --decode; echo
+```
+
+### 2. 매니페스트 적용
+
+`infra/k8s` 디렉터리에는 `configmap`, `deployment`, `service`, `ingress`가 정의되어 있습니다. Kustomize로 한 번에 적용할 수 있습니다.
+
+```powershell
+kubectl apply -k infra/k8s
+```
+
+```bash
+kubectl apply -k infra/k8s
+```
+
+특정 리소스를 다시 적용하려면 `-f` 옵션과 파일 경로를 사용합니다.
+
+```powershell
+kubectl apply -f infra/k8s/configmap.yaml
+kubectl apply -f infra/k8s/deployment.yaml
+kubectl apply -f infra/k8s/service.yaml
+kubectl apply -f infra/k8s/ingress.yaml
+```
+
+```bash
+kubectl apply -f infra/k8s/configmap.yaml
+kubectl apply -f infra/k8s/deployment.yaml
+kubectl apply -f infra/k8s/service.yaml
+kubectl apply -f infra/k8s/ingress.yaml
+```
+
+### 3. 배포 상태 확인
+
+```powershell
+# Pod 상태
+kubectl get pods -l app=blazor-auth-sample
+
+# Service 정보
+kubectl get svc blazor-auth-sample
+
+# Ingress 경로
+kubectl get ingress blazor-auth-sample
+
+# 로그 스트리밍
+$pod = kubectl get pods -l app=blazor-auth-sample -o jsonpath='{.items[0].metadata.name}'
+kubectl logs -f $pod --tail=100 --timestamps
+```
+
+```bash
+# Pod 상태
+kubectl get pods -l app=blazor-auth-sample
+
+# Service 정보
+kubectl get svc blazor-auth-sample
+
+# Ingress 경로
+kubectl get ingress blazor-auth-sample
+
+# 로그 스트리밍
+pod=$(kubectl get pods -l app=blazor-auth-sample -o jsonpath='{.items[0].metadata.name}')
+kubectl logs -f "${pod}" --tail=100 --timestamps
+```
+
+### 스케일링과 롤아웃
+
+```powershell
+# 수평 확장
+kubectl scale deployment blazor-auth-sample --replicas=3
+
+# 새 이미지로 업데이트
+kubectl set image deployment/blazor-auth-sample `
+    blazor-auth-sample=ghcr.io/pid011/blazor-auth-sample:v2.0
+
+# 배포 상태 확인
+kubectl rollout status deployment/blazor-auth-sample
+
+# 필요 시 롤백
+kubectl rollout undo deployment/blazor-auth-sample
+```
+
+```bash
+# 수평 확장
+kubectl scale deployment blazor-auth-sample --replicas=3
+
+# 새 이미지로 업데이트
+kubectl set image deployment/blazor-auth-sample \
+    blazor-auth-sample=ghcr.io/pid011/blazor-auth-sample:v2.0
+
+# 배포 상태 확인
+kubectl rollout status deployment/blazor-auth-sample
+
+# 필요 시 롤백
+kubectl rollout undo deployment/blazor-auth-sample
+```
+
+### 삭제
+
+```powershell
+kubectl delete -k infra/k8s
+kubectl delete secret blazor-auth-sample-secret --ignore-not-found
+```
+
+```bash
+kubectl delete -k infra/k8s
+kubectl delete secret blazor-auth-sample-secret --ignore-not-found
+```
+
+개별 리소스를 삭제하려면 `kubectl delete -f <파일>`을 사용할 수 있습니다.
+
+### TLS/SSL
+
+Let's Encrypt 기반 TLS를 구성하려면 `cert-manager`를 설치한 뒤 `ingress.yaml`의 TLS 섹션을 활성화하고 인증서 Secret을 참조하도록 설정합니다.
+
+```powershell
+kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.13.2/cert-manager.yaml
+```
+
+```bash
+kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.13.2/cert-manager.yaml
+```
+
+### 트러블슈팅 체크리스트
+
+```powershell
+# Pod 이벤트 및 로그 확인
+kubectl describe pod -l app=blazor-auth-sample
+kubectl logs -l app=blazor-auth-sample
+
+# Ingress 문제 확인
+kubectl describe ingress blazor-auth-sample
+kubectl logs -n ingress-nginx -l app.kubernetes.io/name=ingress-nginx
+
+# Secret에 저장된 연결 문자열 확인
+kubectl get secret blazor-auth-sample-secret -o jsonpath='{.data.connection-string}' | ForEach-Object {
+  [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($_))
+}
+```
+
+```bash
+# Pod 이벤트 및 로그 확인
+kubectl describe pod -l app=blazor-auth-sample
+kubectl logs -l app=blazor-auth-sample
+
+# Ingress 문제 확인
+kubectl describe ingress blazor-auth-sample
+kubectl logs -n ingress-nginx -l app.kubernetes.io/name=ingress-nginx
+
+# Secret에 저장된 연결 문자열 확인
+kubectl get secret blazor-auth-sample-secret -o jsonpath='{.data.connection-string}' | base64 --decode; echo
+```

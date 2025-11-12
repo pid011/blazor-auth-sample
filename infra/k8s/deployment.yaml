@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: blazor-auth-sample
+  labels:
+    app: blazor-auth-sample
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: blazor-auth-sample
+  template:
+    metadata:
+      labels:
+        app: blazor-auth-sample
+    spec:
+      containers:
+        - name: blazor-auth-sample
+          image: ghcr.io/pid011/blazor-auth-sample:latest
+          imagePullPolicy: Always
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          ports:
+            - containerPort: 8080
+              name: http
+              protocol: TCP
+          env:
+            - name: ConnectionStrings__db
+              valueFrom:
+                secretKeyRef:
+                  name: blazor-auth-sample-secret
+                  key: connection-string
+            - name: ASPNETCORE_ENVIRONMENT
+              valueFrom:
+                configMapKeyRef:
+                  name: blazor-auth-sample-config
+                  key: aspnetcore-environment
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3

@@ -52,7 +52,9 @@ kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/cont
 # PowerShell
 
 $connectionString = "Host=<호스트>;Port=<포트>;Username=<유저네임>;Password=<패스워드>;Database=<데이터베이스>;"
+
 kubectl delete secret blazor-auth-sample-secret -n default --ignore-not-found
+
 kubectl create secret generic blazor-auth-sample-secret `
   --from-literal=connection-string=$connectionString
 ```
@@ -61,7 +63,9 @@ kubectl create secret generic blazor-auth-sample-secret `
 # Bash
 
 connectionString="Host=<호스트>;Port=<포트>;Username=<유저네임>;Password=<패스워드>;Database=<데이터베이스>;"
+
 kubectl delete secret blazor-auth-sample-secret -n default --ignore-not-found
+
 kubectl create secret generic blazor-auth-sample-secret \
   --from-literal="connection-string=${connectionString}"
 ```

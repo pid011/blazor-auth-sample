@@ -46,12 +46,12 @@ kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/cont
 ### 1. 환경 변수와 Secret 설정
 
 - `infra/k8s/configmap.yaml`에서 `aspnetcore-environment` 값을 원하는 환경으로 설정합니다.
-- 데이터베이스 연결 문자열은 Secret으로 관리합니다.
+- 데이터베이스는 PostgreSQL을 사용하며 연결 문자열은 Secret으로 관리합니다. 로컬 PostgreSQL, 클라우드 매니지드 서비스(Aiven, Supabase 등) 모두 사용 가능합니다. 외부 서비스를 사용할 경우 SSL 옵션과 포트 정보를 확인해 연결 문자열에 반영하세요.
 
 ```powershell
 # PowerShell
 
-$connectionString = "Host=<DB URL>;Port=5432;Username=postgres;Password=<패스워드>;Database=postgres;"
+$connectionString = "Host=<호스트>;Port=<포트>;Username=<유저네임>;Password=<패스워드>;Database=<데이터베이스>;"
 kubectl delete secret blazor-auth-sample-secret -n default --ignore-not-found
 kubectl create secret generic blazor-auth-sample-secret `
   --from-literal=connection-string=$connectionString
@@ -60,7 +60,7 @@ kubectl create secret generic blazor-auth-sample-secret `
 ```bash
 # Bash
 
-connectionString="Host=<DB URL>;Port=5432;Username=postgres;Password=<패스워드>;Database=postgres;"
+connectionString="Host=<호스트>;Port=<포트>;Username=<유저네임>;Password=<패스워드>;Database=<데이터베이스>;"
 kubectl delete secret blazor-auth-sample-secret -n default --ignore-not-found
 kubectl create secret generic blazor-auth-sample-secret \
   --from-literal="connection-string=${connectionString}"

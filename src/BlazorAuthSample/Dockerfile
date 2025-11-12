@@ -1,41 +1,31 @@
-# Build stage
-FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
-WORKDIR /src
+# See https://aka.ms/customizecontainer to learn how to customize your debug container and how Visual Studio uses this Dockerfile to build your images for faster debugging.
 
-# Copy solution and project files
-COPY ["src/BlazorAuthSample/BlazorAuthSample.csproj", "src/BlazorAuthSample/"]
-COPY ["src/BlazorAuthSample.ServiceDefaults/BlazorAuthSample.ServiceDefaults.csproj", "src/BlazorAuthSample.ServiceDefaults/"]
-
-# Restore dependencies
-RUN dotnet restore "src/BlazorAuthSample/BlazorAuthSample.csproj"
-
-# Copy everything else
-COPY . .
-
-# Build the application
-WORKDIR "/src/src/BlazorAuthSample"
-RUN dotnet build "BlazorAuthSample.csproj" -c Release -o /app/build
-
-# Publish stage
-FROM build AS publish
-RUN dotnet publish "BlazorAuthSample.csproj" -c Release -o /app/publish /p:UseAppHost=false
-
-# Runtime stage
-FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
+# This stage is used when running from VS in fast mode (Default for Debug configuration)
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS base
+USER $APP_UID
 WORKDIR /app
 EXPOSE 8080
 EXPOSE 8081
 
-# Copy published application
+
+# This stage is used to build the service project
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+ARG BUILD_CONFIGURATION=Release
+WORKDIR /src
+COPY ["src/BlazorAuthSample/BlazorAuthSample.csproj", "src/BlazorAuthSample/"]
+COPY ["src/BlazorAuthSample.ServiceDefaults/BlazorAuthSample.ServiceDefaults.csproj", "src/BlazorAuthSample.ServiceDefaults/"]
+RUN dotnet restore "./src/BlazorAuthSample/BlazorAuthSample.csproj"
+COPY . .
+WORKDIR "/src/src/BlazorAuthSample"
+RUN dotnet build "./BlazorAuthSample.csproj" -c $BUILD_CONFIGURATION -o /app/build
+
+# This stage is used to publish the service project to be copied to the final stage
+FROM build AS publish
+ARG BUILD_CONFIGURATION=Release
+RUN dotnet publish "./BlazorAuthSample.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
+
+# This stage is used in production or when running from VS in regular mode (Default when not using the Debug configuration)
+FROM base AS final
+WORKDIR /app
 COPY --from=publish /app/publish .
-
-# Set environment variables
-ENV ASPNETCORE_URLS=http://+:8080
-ENV ASPNETCORE_ENVIRONMENT=Production
-
-# Create a non-root user
-RUN adduser --disabled-password --gecos "" appuser && \
-    chown -R appuser:appuser /app
-USER appuser
-
 ENTRYPOINT ["dotnet", "BlazorAuthSample.dll"]

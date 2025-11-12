@@ -32,10 +32,14 @@ Blazor Server 샘플 애플리케이션을 .NET Aspire 기반으로 구성하고
 3. Nginx Ingress Controller (아래 명령 참고)
 
 ```powershell
+# PowerShell
+
 kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.9.5/deploy/static/provider/cloud/deploy.yaml
 ```
 
 ```bash
+# Bash
+
 kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.9.5/deploy/static/provider/cloud/deploy.yaml
 ```
 
@@ -45,13 +49,17 @@ kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/cont
 - 데이터베이스 연결 문자열은 Secret으로 관리합니다.
 
 ```powershell
+# PowerShell
+
 $connectionString = "Host=<DB URL>;Port=5432;Username=postgres;Password=<패스워드>;Database=postgres;"
 kubectl delete secret blazor-auth-sample-secret -n default --ignore-not-found
 kubectl create secret generic blazor-auth-sample-secret `
-    --from-literal=connection-string=$connectionString
+  --from-literal=connection-string=$connectionString
 ```
 
 ```bash
+# Bash
+
 connectionString="Host=<DB URL>;Port=5432;Username=postgres;Password=<패스워드>;Database=postgres;"
 kubectl delete secret blazor-auth-sample-secret -n default --ignore-not-found
 kubectl create secret generic blazor-auth-sample-secret \
@@ -61,12 +69,16 @@ kubectl create secret generic blazor-auth-sample-secret \
 Secret 값을 확인하려면 다음을 사용하세요.
 
 ```powershell
+# PowerShell
+
 kubectl get secret blazor-auth-sample-secret -o jsonpath='{.data.connection-string}' | ForEach-Object {
-    [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($_))
+  [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($_))
 }
 ```
 
 ```bash
+# Bash
+
 kubectl get secret blazor-auth-sample-secret -o jsonpath='{.data.connection-string}' | base64 --decode; echo
 ```
 
@@ -75,16 +87,22 @@ kubectl get secret blazor-auth-sample-secret -o jsonpath='{.data.connection-stri
 `infra/k8s` 디렉터리에는 `configmap`, `deployment`, `service`, `ingress`가 정의되어 있습니다. Kustomize로 한 번에 적용할 수 있습니다.
 
 ```powershell
+# PowerShell
+
 kubectl apply -k infra/k8s
 ```
 
 ```bash
+# Bash
+
 kubectl apply -k infra/k8s
 ```
 
 특정 리소스를 다시 적용하려면 `-f` 옵션과 파일 경로를 사용합니다.
 
 ```powershell
+# PowerShell
+
 kubectl apply -f infra/k8s/configmap.yaml
 kubectl apply -f infra/k8s/deployment.yaml
 kubectl apply -f infra/k8s/service.yaml
@@ -92,6 +110,8 @@ kubectl apply -f infra/k8s/ingress.yaml
 ```
 
 ```bash
+# Bash
+
 kubectl apply -f infra/k8s/configmap.yaml
 kubectl apply -f infra/k8s/deployment.yaml
 kubectl apply -f infra/k8s/service.yaml
@@ -101,6 +121,8 @@ kubectl apply -f infra/k8s/ingress.yaml
 ### 3. 배포 상태 확인
 
 ```powershell
+# PowerShell
+
 # Pod 상태
 kubectl get pods -l app=blazor-auth-sample
 
@@ -116,6 +138,8 @@ kubectl logs -f $pod --tail=100 --timestamps
 ```
 
 ```bash
+# Bash
+
 # Pod 상태
 kubectl get pods -l app=blazor-auth-sample
 
@@ -133,12 +157,14 @@ kubectl logs -f "${pod}" --tail=100 --timestamps
 ### 스케일링과 롤아웃
 
 ```powershell
+# PowerShell
+
 # 수평 확장
 kubectl scale deployment blazor-auth-sample --replicas=3
 
 # 새 이미지로 업데이트
 kubectl set image deployment/blazor-auth-sample `
-    blazor-auth-sample=ghcr.io/pid011/blazor-auth-sample:v2.0
+  blazor-auth-sample=ghcr.io/pid011/blazor-auth-sample:v2.0
 
 # 배포 상태 확인
 kubectl rollout status deployment/blazor-auth-sample
@@ -148,28 +174,34 @@ kubectl rollout undo deployment/blazor-auth-sample
 ```
 
 ```bash
+# Bash
+
 # 수평 확장
 kubectl scale deployment blazor-auth-sample --replicas=3
 
 # 새 이미지로 업데이트
 kubectl set image deployment/blazor-auth-sample \
-    blazor-auth-sample=ghcr.io/pid011/blazor-auth-sample:v2.0
+  blazor-auth-sample=ghcr.io/pid011/blazor-auth-sample:v2.0
 
 # 배포 상태 확인
-kubectl rollout status deployment/blazor-auth-sample
+kubectl rollout status deployment-blazor-auth-sample
 
 # 필요 시 롤백
-kubectl rollout undo deployment/blazor-auth-sample
+kubectl rollout undo deployment-blazor-auth-sample
 ```
 
 ### 삭제
 
 ```powershell
+# PowerShell
+
 kubectl delete -k infra/k8s
 kubectl delete secret blazor-auth-sample-secret --ignore-not-found
 ```
 
 ```bash
+# Bash
+
 kubectl delete -k infra/k8s
 kubectl delete secret blazor-auth-sample-secret --ignore-not-found
 ```
@@ -181,16 +213,22 @@ kubectl delete secret blazor-auth-sample-secret --ignore-not-found
 Let's Encrypt 기반 TLS를 구성하려면 `cert-manager`를 설치한 뒤 `ingress.yaml`의 TLS 섹션을 활성화하고 인증서 Secret을 참조하도록 설정합니다.
 
 ```powershell
+# PowerShell
+
 kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.13.2/cert-manager.yaml
 ```
 
 ```bash
+# Bash
+
 kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.13.2/cert-manager.yaml
 ```
 
 ### 트러블슈팅 체크리스트
 
 ```powershell
+# PowerShell
+
 # Pod 이벤트 및 로그 확인
 kubectl describe pod -l app=blazor-auth-sample
 kubectl logs -l app=blazor-auth-sample
@@ -201,11 +239,13 @@ kubectl logs -n ingress-nginx -l app.kubernetes.io/name=ingress-nginx
 
 # Secret에 저장된 연결 문자열 확인
 kubectl get secret blazor-auth-sample-secret -o jsonpath='{.data.connection-string}' | ForEach-Object {
-  [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($_))
+    [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($_))
 }
 ```
 
 ```bash
+# Bash
+
 # Pod 이벤트 및 로그 확인
 kubectl describe pod -l app=blazor-auth-sample
 kubectl logs -l app=blazor-auth-sample

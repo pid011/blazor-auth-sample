@@ -57,3 +57,75 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           platforms: linux/amd64,linux/arm64
+
+  efbundle:
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      contents: read
+      actions: read
+    strategy:
+      matrix:
+        runtime: [ linux-x64, win-x64 ]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+          dotnet-quality: preview
+
+      - name: Install dotnet-ef tool
+        run: dotnet tool install --global dotnet-ef
+
+      - name: Add dotnet tools to PATH
+        run: echo "${HOME}/.dotnet/tools" >> ${GITHUB_PATH}
+        shell: bash
+
+      - name: Create EF bundle for ${{ matrix.runtime }}
+        run: |
+          mkdir -p artifacts
+          OUTPUT="artifacts/efbundle-${{ matrix.runtime }}"
+          if [[ "${{ matrix.runtime }}" == "win-x64" ]]; then
+            OUTPUT="${OUTPUT}.exe"
+          fi
+          dotnet ef migrations bundle \
+            --project src/BlazorAuthSample/BlazorAuthSample.csproj \
+            --startup-project src/BlazorAuthSample/BlazorAuthSample.csproj \
+            --configuration Release \
+            --self-contained \
+            --target-runtime ${{ matrix.runtime }} \
+            --output "$OUTPUT"
+        shell: bash
+
+      - name: Upload EF bundle artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: efbundle-${{ matrix.runtime }}
+          path: artifacts/*
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    needs:
+      - build
+      - efbundle
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download EF bundle artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: efbundles
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: efbundles/**/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

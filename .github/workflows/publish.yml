@@ -124,6 +124,8 @@ jobs:
       - name: Download EF bundle artifacts
         uses: actions/download-artifact@v4
         with:
+          # efbundle-* 만 다운로드 (dockerbuild 메타 아티팩트 제외)
+          pattern: efbundle-*
           path: efbundles
 
       - name: Create GitHub release

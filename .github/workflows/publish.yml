@@ -82,6 +82,14 @@ jobs:
         run: echo "${HOME}/.dotnet/tools" >> ${GITHUB_PATH}
         shell: bash
 
+      - name: Restore NuGet packages
+        run: dotnet restore src/BlazorAuthSample/BlazorAuthSample.csproj
+        shell: bash
+
+      - name: Build (Release)
+        run: dotnet build src/BlazorAuthSample/BlazorAuthSample.csproj --configuration Release --no-restore
+        shell: bash
+
       - name: Create EF bundle for ${{ matrix.runtime }}
         run: |
           mkdir -p artifacts

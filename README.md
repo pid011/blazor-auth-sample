@@ -34,13 +34,13 @@ Blazor Server 샘플 애플리케이션을 .NET Aspire 기반으로 구성하고
 ```powershell
 # PowerShell
 
-kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.9.5/deploy/static/provider/cloud/deploy.yaml
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.14.0/deploy/static/provider/cloud/deploy.yaml
 ```
 
 ```bash
 # Bash
 
-kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.9.5/deploy/static/provider/cloud/deploy.yaml
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.14.0/deploy/static/provider/cloud/deploy.yaml
 ```
 
 ### 1. 환경 변수와 Secret 설정
@@ -219,13 +219,13 @@ Let's Encrypt 기반 TLS를 구성하려면 `cert-manager`를 설치한 뒤 `ing
 ```powershell
 # PowerShell
 
-kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.13.2/cert-manager.yaml
+kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.19.1/cert-manager.yaml
 ```
 
 ```bash
 # Bash
 
-kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.13.2/cert-manager.yaml
+kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.19.1/cert-manager.yaml
 ```
 
 ### 트러블슈팅 체크리스트

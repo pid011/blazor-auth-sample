@@ -2,7 +2,9 @@ using BlazorAuthSample.Components;
 using BlazorAuthSample.Components.Account;
 using BlazorAuthSample.Data;
 using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -41,6 +43,8 @@ builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSe
 builder.Services.AddRequestTimeouts();
 builder.Services.AddOutputCache();
 
+builder.Services.AddDataProtection().PersistKeysToDbContext<ApplicationDbContext>();
+
 var app = builder.Build();
 
 app.MapDefaultEndpoints();
@@ -48,7 +52,10 @@ app.MapDefaultEndpoints();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.UseMigrationsEndPoint();
+    //app.UseMigrationsEndPoint();
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    await db.Database.MigrateAsync();
 }
 else
 {

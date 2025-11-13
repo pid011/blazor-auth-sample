@@ -8,6 +8,7 @@ var db = builder.AddPostgres("postgres", password: postgresPassword, port: 25544
     .AddDatabase("db");
 
 builder.AddProject<Projects.BlazorAuthSample>("server")
+    .WithReplicas(2)
     .WithReference(db)
     .WaitFor(db);
 

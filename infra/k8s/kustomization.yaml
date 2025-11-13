@@ -11,4 +11,4 @@ labels:
     pairs:
       app.kubernetes.io/component: web
       app.kubernetes.io/name: blazor-auth-sample
-      app.kubernetes.io/version: "0.1"
+      app.kubernetes.io/version: "0.2"
